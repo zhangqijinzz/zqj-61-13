@@ -24,7 +24,13 @@ function loadFromLocalStorage(): GameState | null {
   try {
     const data = localStorage.getItem(STORAGE_KEY)
     if (data) {
-      return JSON.parse(data)
+      const parsed = JSON.parse(data)
+      if (parsed.userProfile) {
+        parsed.userProfile.gameScores = parsed.userProfile.gameScores ?? []
+        parsed.userProfile.hasCelebratedContractCompletion =
+          parsed.userProfile.hasCelebratedContractCompletion ?? false
+      }
+      return parsed
     }
   } catch {
     // ignore
