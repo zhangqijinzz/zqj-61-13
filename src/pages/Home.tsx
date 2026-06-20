@@ -1,10 +1,11 @@
 import { useEffect, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
-import { MessageCircle } from "lucide-react"
+import { MessageCircle, Gamepad2, Award } from "lucide-react"
 import { useGameStore } from "@/store/useGameStore"
 import { scenarios } from "@/data/scenarios"
 import { skills } from "@/data/skills"
+import { GAME_BADGES } from "@/types"
 import CharacterAvatar from "@/components/CharacterAvatar"
 import DifficultyBadge from "@/components/DifficultyBadge"
 import ProgressBar from "@/components/ProgressBar"
@@ -26,12 +27,22 @@ export default function Home() {
   const navigate = useNavigate()
   const userProfile = useGameStore((s) => s.userProfile)
   const missions = useGameStore((s) => s.missions)
+  const getHighScore = useGameStore((s) => s.getHighScore)
 
   useEffect(() => {
     if (!userProfile) {
       navigate("/")
     }
   }, [userProfile, navigate])
+
+  const earnedGameBadgeCount = useMemo(() => {
+    if (!userProfile) return 0
+    return GAME_BADGES.filter((b) => userProfile.earnedBadges.includes(b.id)).length
+  }, [userProfile])
+
+  const totalGameHighScore = useMemo(() => {
+    return getHighScore("reaction") + getHighScore("wordMatch")
+  }, [getHighScore])
 
   const scenarioProgress = useMemo(
     () =>
@@ -239,6 +250,71 @@ export default function Home() {
                 去看看
               </button>
             </div>
+          </div>
+        </motion.section>
+
+        <motion.section variants={staggerItem} className="max-w-lg mx-auto px-4 mt-6">
+          <h2 className="section-title mb-4">快捷导航</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate("/adventure-break")}
+              className="card-adventure !p-4 cursor-pointer bg-gradient-to-br from-adventure-orange/10 via-adventure-gold/5 to-adventure-pink/10 border-2 border-adventure-gold/30"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-adventure-orange to-adventure-gold flex items-center justify-center mb-3 shadow-md">
+                  <Gamepad2 className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="font-display text-lg text-adventure-blue mb-1">
+                  冒险小憩
+                </h3>
+                <p className="font-body text-xs text-adventure-blue/60 mb-2">
+                  两款轻松小游戏，随时放松
+                </p>
+                <div className="flex items-center gap-3 text-xs">
+                  {totalGameHighScore > 0 && (
+                    <div className="flex items-center gap-1 text-adventure-teal">
+                      <span>🏆</span>
+                      <span className="font-display">{totalGameHighScore}</span>
+                    </div>
+                  )}
+                  {earnedGameBadgeCount > 0 && (
+                    <div className="flex items-center gap-1 text-adventure-orange">
+                      <Award className="w-3 h-3" />
+                      <span className="font-display">
+                        {earnedGameBadgeCount}/{GAME_BADGES.length}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate("/skills/badges")}
+              className="card-adventure !p-4 cursor-pointer bg-gradient-to-br from-adventure-teal/10 via-adventure-blue/5 to-adventure-pink/5 border-2 border-adventure-teal/30"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-adventure-teal to-adventure-blue-light flex items-center justify-center mb-3 shadow-md">
+                  <Award className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="font-display text-lg text-adventure-blue mb-1">
+                  成就徽章
+                </h3>
+                <p className="font-body text-xs text-adventure-blue/60 mb-2">
+                  查看所有已解锁的徽章
+                </p>
+                <div className="flex items-center gap-1 text-xs text-adventure-orange">
+                  <span>🏅</span>
+                  <span className="font-display">
+                    {userProfile?.earnedBadges.length ?? 0} 枚已获得
+                  </span>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </motion.section>
       </motion.div>

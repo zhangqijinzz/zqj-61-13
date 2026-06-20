@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { UserProfile, CharacterType, ScenarioResult, Mission, TreeHolePost, Reply } from '@/types'
+import { UserProfile, CharacterType, GameType, GameScoreRecord, ScenarioResult, Mission, TreeHolePost, Reply, GAME_BADGES } from '@/types'
 import { treeHolePosts } from '@/data/treeHolePosts'
+import { defaultMissions } from '@/data/missions'
 
 const STORAGE_KEY = 'dad-adventure-state'
 
@@ -48,6 +49,11 @@ interface GameActions {
   addPost: (post: TreeHolePost) => void
   addReplyToPost: (postId: string, reply: Reply) => void
   togglePostLike: (postId: string) => void
+  recordGameScore: (gameType: GameType, score: number) => string[]
+  getHighScore: (gameType: GameType) => number
+  getGameScoreHistory: (gameType: GameType) => GameScoreRecord[]
+  markContractCompletionCelebrated: () => void
+  checkAllMissionsCompleted: () => boolean
   resetGame: () => void
 }
 
@@ -73,8 +79,13 @@ export const useGameStore = create<StoreType>()((set, get) => ({
       unlockedSkills: [],
       completedMissions: [],
       earnedBadges: [],
+      gameScores: [],
+      hasCelebratedContractCompletion: false,
     }
-    set({ userProfile: profile })
+    set({ 
+      userProfile: profile,
+      missions: defaultMissions.map((m) => ({ ...m })),
+    })
     saveToLocalStorage(get())
   },
 
@@ -205,6 +216,89 @@ export const useGameStore = create<StoreType>()((set, get) => ({
       ),
     })
     saveToLocalStorage(get())
+  },
+
+  recordGameScore: (gameType, score) => {
+    const state = get()
+    if (!state.userProfile) return []
+
+    const record: GameScoreRecord = {
+      id: `score-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      gameType,
+      score,
+      playedAt: new Date().toISOString(),
+    }
+
+    const newScores = [...state.userProfile.gameScores, record]
+    const currentHigh = Math.max(
+      ...state.userProfile.gameScores
+        .filter((s) => s.gameType === gameType)
+        .map((s) => s.score),
+      0
+    )
+
+    const newlyEarnedBadges: string[] = []
+    let newBadges = [...state.userProfile.earnedBadges]
+
+    if (score > currentHigh) {
+      GAME_BADGES.forEach((badge) => {
+        if (
+          badge.gameType === gameType &&
+          score >= badge.threshold &&
+          !newBadges.includes(badge.id)
+        ) {
+          newBadges.push(badge.id)
+          newlyEarnedBadges.push(badge.id)
+        }
+      })
+    }
+
+    set({
+      userProfile: {
+        ...state.userProfile,
+        gameScores: newScores,
+        earnedBadges: newBadges,
+      },
+    })
+    saveToLocalStorage(get())
+    return newlyEarnedBadges
+  },
+
+  getHighScore: (gameType) => {
+    const state = get()
+    if (!state.userProfile) return 0
+    const gameScores = state.userProfile.gameScores.filter(
+      (s) => s.gameType === gameType
+    )
+    if (gameScores.length === 0) return 0
+    return Math.max(...gameScores.map((s) => s.score))
+  },
+
+  getGameScoreHistory: (gameType) => {
+    const state = get()
+    if (!state.userProfile) return []
+    return state.userProfile.gameScores
+      .filter((s) => s.gameType === gameType)
+      .sort((a, b) => new Date(b.playedAt).getTime() - new Date(a.playedAt).getTime())
+      .slice(0, 10)
+  },
+
+  markContractCompletionCelebrated: () => {
+    const state = get()
+    if (!state.userProfile) return
+    set({
+      userProfile: {
+        ...state.userProfile,
+        hasCelebratedContractCompletion: true,
+      },
+    })
+    saveToLocalStorage(get())
+  },
+
+  checkAllMissionsCompleted: () => {
+    const state = get()
+    if (state.missions.length === 0) return false
+    return state.missions.every((m) => m.completed)
   },
 
   resetGame: () => {

@@ -12,6 +12,9 @@ import Contract from "@/pages/Contract";
 import MiniGame from "@/pages/MiniGame";
 import TreeHole from "@/pages/TreeHole";
 import TreeHolePost from "@/pages/TreeHolePost";
+import AdventureBreak from "@/pages/AdventureBreak";
+import ReactionGame from "@/pages/ReactionGame";
+import WordMatchGame from "@/pages/WordMatchGame";
 
 function LayoutWrapper() {
   return (
@@ -36,6 +39,9 @@ export default function App() {
           <Route path="/skills/:skillId" element={<SkillDetail />} />
           <Route path="/contract" element={<Contract />} />
           <Route path="/contract/mini-game/:gameId" element={<MiniGame />} />
+          <Route path="/adventure-break" element={<AdventureBreak />} />
+          <Route path="/adventure-break/reaction" element={<ReactionGame />} />
+          <Route path="/adventure-break/wordMatch" element={<WordMatchGame />} />
           <Route path="/tree-hole" element={<TreeHole />} />
           <Route path="/tree-hole/:postId" element={<TreeHolePost />} />
         </Route>
